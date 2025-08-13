@@ -1,1 +1,414 @@
-<p>hello, world</p>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thigh码加密解密工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .textbox-shadow {
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            }
+            .btn-hover {
+                @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-5xl bg-white rounded-xl shadow-xl p-6 md:p-8">
+        <h1 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold text-center text-gray-800 mb-8">
+            <i class="fa fa-lock text-primary mr-2"></i>Thigh码加密解密工具
+        </h1>
+        
+        <!-- 偏移量输入 -->
+        <div class="mb-8">
+            <label for="keyText" class="block text-sm font-medium text-gray-700 mb-2">密钥：</label>
+            <input 
+                type="text" 
+                id="keyText" 
+                class="w-full max-w-xs p-3 border border-gray-300 rounded-lg textbox-shadow focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none"
+                placeholder="请输入密钥" 
+            >
+            <p class="mt-2 text-sm text-gray-500">密钥只支持字母和数字</p>
+        </div>
+        
+        <div class="flex flex-col md:flex-row gap-6 items-center">
+            <!-- 左侧明文输入框 -->
+            <div class="w-full md:w-1/2">
+                <label for="plaintext" class="block text-sm font-medium text-gray-700 mb-2">明文：</label>
+                <textarea 
+                    id="plaintext" 
+                    class="w-full h-40 p-4 border border-gray-300 rounded-lg textbox-shadow focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none resize-none"
+                    placeholder="请输入要加密的文本..."></textarea>
+            </div>
+            
+            <!-- 操作按钮组 -->
+            <div class="flex-shrink-0 flex flex-col gap-3">
+                <button 
+                    id="encryptBtn" 
+                    class="bg-primary hover:bg-primary/90 text-white font-semibold py-3 px-6 rounded-full btn-hover flex items-center justify-center"
+                >
+                    <i class="fa fa-arrow-right mr-2"></i>加密
+                </button>
+                <button 
+                    id="decryptBtn" 
+                    class="bg-secondary hover:bg-secondary/90 text-white font-semibold py-3 px-6 rounded-full btn-hover flex items-center justify-center"
+                >
+                    <i class="fa fa-arrow-left mr-2"></i>解密
+                </button>
+            </div>
+            
+            <!-- 右侧密文输入框 -->
+            <div class="w-full md:w-1/2">
+                <label for="ciphertext" class="block text-sm font-medium text-gray-700 mb-2">密文：</label>
+                <textarea 
+                    id="ciphertext" 
+                    class="w-full h-40 p-4 border border-gray-300 rounded-lg textbox-shadow focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none resize-none"
+                    placeholder="加密后的文本将显示在这里..."></textarea>
+            </div>
+        </div>
+        
+        <div class="mt-6 text-center text-gray-500 text-sm">
+            <p>左侧输入明文点击加密，右侧输入密文点击解密，目前仅支持中文</p>
+        </div>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const plaintext = document.getElementById('plaintext');
+        const ciphertext = document.getElementById('ciphertext');
+        const keyText = document.getElementById('keyText');
+        const encryptBtn = document.getElementById('encryptBtn');
+        const decryptBtn = document.getElementById('decryptBtn');
+
+        /**
+         * 加密文本
+         * @param {string} plaintext - 要加密的明文（可以包含中文）
+         * @param {string} key - 加密密钥
+         * @returns {string} 加密后的密文
+         */
+        function encrypt(plaintext, key) {
+            let encrypted = [];
+            // 遍历明文中的每个字符
+            for (let i = 0; i < plaintext.length; i++) {
+            // 获取当前字符的Unicode编码
+            const charCode = plaintext.charCodeAt(i);
+            // 获取密钥中对应位置字符的Unicode编码（循环使用密钥）
+            const keyCode = key.charCodeAt(i % key.length);
+            // 异或运算进行加密
+            const encryptedCode = charCode ^ keyCode;
+            // 将加密后的编码转换为16进制并添加到结果数组，确保至少4位
+            encrypted.push(encryptedCode.toString(16).padStart(4, '0'));
+            }
+            
+            // 连接所有16进制字符串作为最终密文
+            return encrypted.join('');
+        }
+    
+        /**
+         * 解密文本
+         * @param {string} ciphertext - 要解密的密文
+         * @param {string} key - 解密密钥（必须与加密时使用的密钥相同）
+         * @returns {string} 解密后的明文
+         */
+        function decrypt(ciphertext, key) {
+            let decrypted = [];
+            // 每4个字符一组进行解密
+            for (let i = 0; i < ciphertext.length; i += 4) {
+            // 提取4个字符作为一个16进制字符串
+            const hexStr = ciphertext.substr(i, 4);
+            // 将16进制字符串转换为整数，确保正确处理0x前缀的情况
+            const encryptedCode = parseInt(hexStr, 16);
+            // 检查是否为有效数字
+            if (isNaN(encryptedCode)) {
+                throw new Error(`密文包含无效的16进制字符: ${hexStr}`);
+            }
+            // 获取密钥中对应位置字符的Unicode编码（循环使用密钥）
+            const keyCode = key.charCodeAt((i / 4) % key.length);
+            // 异或运算进行解密
+            const decryptedCode = encryptedCode ^ keyCode;
+            // 将解密后的编码转换为字符并添加到结果数组
+            decrypted.push(String.fromCharCode(decryptedCode));
+            }
+            
+            // 连接所有字符作为最终明文
+            return decrypted.join('');
+        }
+
+        function decimalTo73728(n) {
+            // 处理0的特殊情况
+            if (n === 0) {
+                return [0];
+            }
+            
+            const base = 73728;
+            const digits = [];
+            let num = n;
+            
+            // 循环计算每一位
+            while (num > 0) {
+                // 取余数作为当前位
+                const remainder = num % base;
+                digits.unshift(remainder); // 将当前位添加到数组开头
+                // 计算商，用于下一次循环
+                num = num / base;
+            }
+            
+            return digits;
+        }
+
+        // 加密时字符串转换
+        function parseEncrypt(text) {
+            let encrypted = [];
+            const text1 = [
+                '6', '六', '666', '六六六', '六百六十六', '陆佰陆拾六', 
+                '6,', '六,', '666,', '六六六,', '六百六十六,', '陆佰陆拾六,'
+            ];
+            const text2 = [
+                'thigh', 'thigH', 'thiGh', 'thiGH', 'thIgh', 'thIgH', 'thIGh', 'thIGH', 
+                'tHigh', 'tHigH', 'tHiGh', 'tHiGH', 'tHIgh', 'tHIgH', 'tHIGh', 'tHIGH', 
+                'Thigh', 'ThigH', 'ThiGh', 'ThiGH', 'ThIgh', 'ThIgH', 'ThIGh', 'ThIGH', 
+                'THigh', 'THigH', 'THiGh', 'THiGH', 'THIgh', 'THIgH', 'THIGh', 'THIGH'
+            ];
+            const text3 = [
+                'big胆', 'Big胆', 'bIg胆', 'biG胆', 'BIg胆', 'BiG胆', 'bIG胆', 'BIG胆', 
+                'big月旦', 'Big月旦', 'bIg月旦', 'biG月旦', 'BIg月旦', 'BiG月旦', 'bIG月旦', 'BIG月旦', 
+                '真是big胆', '真是Big胆', '真是bIg胆', '真是biG胆', '真是BIg胆', '真是BiG胆', '真是bIG胆', '真是BIG胆', 
+                '真是big月旦', '真是Big月旦', '真是bIg月旦', '真是biG月旦', '真是BIg月旦', '真是BiG月旦', '真是bIG月旦', '真是BIG月旦', 
+            ];
+            let num = 0;
+            let digits = 0;
+            let hexStr = '';
+            for (let i = 0; i < text.length; i += 4) {
+                hexStr = text.substr(i, 4);
+                num = parseInt(hexStr, 16);
+                digits = decimalTo73728(num);
+                for (let i = 0; i < digits.length; i += 1) {
+                    let p = digits[i];
+                    let po = p % 6;
+                    p = (p - po) / 6;
+                    let p3 = p % 32;
+                    p = (p - p3) / 32;
+                    let p2 = p % 32;
+                    let p1 = (p - p2) / 32;
+                    if (po == 0) encrypted.push(text1[p1], text2[p2], text3[p3]);
+                    else if (po == 1) encrypted.push(text1[p1], text3[p3], text2[p2]);
+                    else if (po == 2) encrypted.push(text2[p2], text1[p1], text3[p3]);
+                    else if (po == 3) encrypted.push(text2[p2], text3[p3], text1[p1]);
+                    else if (po == 4) encrypted.push(text3[p3], text1[p1], text2[p2]);
+                    else if (po == 5) encrypted.push(text3[p3], text2[p2], text1[p1]);
+                }
+            }
+            return encrypted.join(' ');
+        }
+
+        // 解密时字符串转换
+        function parseDecrypt(text) {
+            const text1 = [
+                '6', '六', '666', '六六六', '六百六十六', '陆佰陆拾六', 
+                '6,', '六,', '666,', '六六六,', '六百六十六,', '陆佰陆拾六,'
+            ];
+            const text2 = [
+                'thigh', 'thigH', 'thiGh', 'thiGH', 'thIgh', 'thIgH', 'thIGh', 'thIGH', 
+                'tHigh', 'tHigH', 'tHiGh', 'tHiGH', 'tHIgh', 'tHIgH', 'tHIGh', 'tHIGH', 
+                'Thigh', 'ThigH', 'ThiGh', 'ThiGH', 'ThIgh', 'ThIgH', 'ThIGh', 'ThIGH', 
+                'THigh', 'THigH', 'THiGh', 'THiGH', 'THIgh', 'THIgH', 'THIGh', 'THIGH'
+            ];
+            const text3 = [
+                'big胆', 'Big胆', 'bIg胆', 'biG胆', 'BIg胆', 'BiG胆', 'bIG胆', 'BIG胆', 
+                'big月旦', 'Big月旦', 'bIg月旦', 'biG月旦', 'BIg月旦', 'BiG月旦', 'bIG月旦', 'BIG月旦', 
+                '真是big胆', '真是Big胆', '真是bIg胆', '真是biG胆', '真是BIg胆', '真是BiG胆', '真是bIG胆', '真是BIG胆', 
+                '真是big月旦', '真是Big月旦', '真是bIg月旦', '真是biG月旦', '真是BIg月旦', '真是BiG月旦', '真是bIG月旦', '真是BIG月旦', 
+            ];
+
+            // 创建反向映射表，用于快速查找字符对应的索引
+            const text1Map = new Map();
+            const text2Map = new Map();
+            const text3Map = new Map();
+            
+            text1.forEach((val, idx) => text1Map.set(val, idx));
+            text2.forEach((val, idx) => text2Map.set(val, idx));
+            text3.forEach((val, idx) => text3Map.set(val, idx));
+            
+            // 将加密字符串按空格分割成部分数组
+            const parts = text.split(' ');
+            const base = 73728;
+            const digits = [];
+            
+            // 每三个部分一组进行处理（对应一个9216进制数字）
+            for (let i = 0; i < parts.length; i += 3) {
+                const s1 = parts[i];
+                const s2 = parts[i + 1];
+                const s3 = parts[i + 2];
+                
+                // 确定每个部分属于哪个映射表及其索引
+                let p1, p2, p3;
+                let t1, t2, t3;
+                
+                // 检查第一个部分
+                if (text1Map.has(s1)) {
+                    t1 = 'text1';
+                    p1 = text1Map.get(s1);
+                } else if (text2Map.has(s1)) {
+                    t1 = 'text2';
+                    p2 = text2Map.get(s1);
+                } else if (text3Map.has(s1)) {
+                    t1 = 'text3';
+                    p3 = text3Map.get(s1);
+                } else {
+                    throw new Error(`无效的加密部分: ${s1}`);
+                }
+                
+                // 检查第二个部分
+                if (text1Map.has(s2)) {
+                    t2 = 'text1';
+                    p1 = text1Map.get(s2);
+                } else if (text2Map.has(s2)) {
+                    t2 = 'text2';
+                    p2 = text2Map.get(s2);
+                } else if (text3Map.has(s2)) {
+                    t2 = 'text3';
+                    p3 = text3Map.get(s2);
+                } else {
+                    throw new Error(`无效的加密部分: ${s2}`);
+                }
+                
+                // 检查第三个部分
+                if (text1Map.has(s3)) {
+                    t3 = 'text1';
+                    p1 = text1Map.get(s3);
+                } else if (text2Map.has(s3)) {
+                    t3 = 'text2';
+                    p2 = text2Map.get(s3);
+                } else if (text3Map.has(s3)) {
+                    t3 = 'text3';
+                    p3 = text3Map.get(s3);
+                } else {
+                    throw new Error(`无效的加密部分: ${s3}`);
+                }
+                
+                // 根据三个部分的类型顺序确定po值
+                let po;
+                const order = `${t1},${t2},${t3}`;
+                switch (order) {
+                    case 'text1,text2,text3':
+                        po = 0;
+                        break;
+                    case 'text1,text3,text2':
+                        po = 1;
+                        break;
+                    case 'text2,text1,text3':
+                        po = 2;
+                        break;
+                    case 'text2,text3,text1':
+                        po = 3;
+                        break;
+                    case 'text3,text1,text2':
+                        po = 4;
+                        break;
+                    case 'text3,text2,text1':
+                        po = 5;
+                        break;
+                    default:
+                        throw new Error(`无效的部分顺序: ${order}`);
+                }
+                
+                // 计算原始的73728进制数字
+                const digit = ((p1 * 32 + p2) * 32 + p3) * 6 + po;
+                digits.push(digit.toString(16));
+            }
+            
+            return digits.join('');
+        }
+
+        
+        // 加密操作
+        function encryptText() {
+            const text = plaintext.value;
+            let key = keyText.value;
+            
+            if (!text || !key) {
+                // throw new Error('明文和密钥都不能为空');
+                key = 'thigh';
+            }
+            
+            const encrypted = encrypt(text, key);
+            ciphertext.value = parseEncrypt(encrypted);
+            addHighlightEffect(ciphertext, 'bg-blue-50');
+        }
+        
+        // 解密操作
+        function decryptText() {
+            const text = parseDecrypt(ciphertext.value);
+            let key = keyText.value;
+            
+            if (!text || !key) {
+                // throw new Error('密文和密钥都不能为空');
+                key = 'thigh';
+            }
+            
+            // 检查密文长度是否为4的倍数（每个字符加密后为4个16进制字符）
+            // if (text.length % 4 !== 0) {
+            //     throw new Error('无效的密文格式');
+            // }
+            
+            
+            const decrypted = decrypt(text, key);
+            plaintext.value = decrypted;
+            addHighlightEffect(plaintext, 'bg-green-50');
+        }
+        // 0 6
+        // 1 thigh
+        // 2 big胆
+
+        
+        // 添加高亮效果
+        function addHighlightEffect(element, className) {
+            element.classList.add(className);
+            setTimeout(() => {
+                element.classList.remove(className);
+            }, 300);
+        }
+        
+        // 绑定按钮点击事件
+        encryptBtn.addEventListener('click', encryptText);
+        decryptBtn.addEventListener('click', decryptText);
+        
+        // 回车键触发操作
+        plaintext.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                encryptText();
+            }
+        });
+        
+        ciphertext.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                decryptText();
+            }
+        });
+    </script>
+</body>
+</html>
