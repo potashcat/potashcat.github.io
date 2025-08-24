@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@lichess-org/chessground": "^9.5.1"
+  }
+}
